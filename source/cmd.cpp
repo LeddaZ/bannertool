@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <algorithm>
 #include <codecvt>
 #include <locale>
@@ -28,15 +32,13 @@ static void utf8_to_utf16(u16* dst, const std::string& src, size_t maxLen) {
         return;
     }
 
+#ifdef _WIN32
+    MultiByteToWideChar(CP_ACP, 0, src.c_str(), src.size(), (LPWSTR)dst, maxLen);
+#else
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
     std::u16string str16 = converter.from_bytes(src.data());
-
-    size_t copyLen = str16.length() * sizeof(char16_t);
-    if(copyLen > maxLen) {
-        copyLen = maxLen;
-    }
-
-    memcpy(dst, str16.data(), copyLen);
+    memcpy(dst, str16.data(), std::min(str16.length() * sizeof(char16_t), maxLen));
+#endif
 }
 
 static void* read_file(u32* size, const std::string& file) {
